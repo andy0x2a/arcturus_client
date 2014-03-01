@@ -1,11 +1,13 @@
-var base = "http://localhost:8080/"
-var lcn = "arcturus/location/"
+var base = "http://arcturus.elasticbeanstalk.com/"
+var lcn = "location/"
 //var url = base + lcn;
 
 
 var remainingRequests = 0;
-var map = {};
+var locationsDataMap = {};
 var locationArray = null;
+var map = null;
+
 function get(url, successCallback) {
 
     var locationArray = [];
@@ -35,7 +37,7 @@ var showLocations = function(strData, textSatus, jqXHR) {
 
         var entriesLink = locn.links[0];
 
-        map[locn.id] = {'location': locn, 'entries': null};
+        locationsDataMap[locn.id] = {'location': locn, 'entries': null};
 
         get(base + entriesLink.url, showEntries);
 
@@ -53,18 +55,18 @@ function showEntries(entries, textSatus, jqXHR) {
 
 
     if (!!entries[0]) {
-        var locEntry = map[entries[0].locationId];
+        var locEntry = locationsDataMap[entries[0].locationId];
         if (!!locEntry) {
             locEntry['entries'] = entries;
         }
-        map[entries[0].locationId] = locEntry;
+        locationsDataMap[entries[0].locationId] = locEntry;
     }
 
 
     if (remainingRequests <= 0) {
 
         for (var i = 0; i < locationArray.length; i++) {
-            var mapVal = map[locationArray[i].id];
+            var mapVal = locationsDataMap[locationArray[i].id];
             if (!!mapVal) {
                 console.log("map val found");
                 displayOnMap(mapVal['location'], mapVal['entries']);
@@ -74,22 +76,7 @@ function showEntries(entries, textSatus, jqXHR) {
 
 
     }
-//    for (var i = 0; i < entries.length; i++) {
-//
-//        var entry = entries[i];
-//
-//         $("#data").html("Rating: " + entry.rating);
-//        var contentId = "#content_"+entry.locationId;
-//        var content = $(contentId);
-//        console.log(content);
-//
-//
-//
-//         displayOnMap(locn, entries);
-//
-//    }
 }
-
 
 function displayOnMap(locn, entries) {
 
@@ -105,12 +92,21 @@ function displayOnMap(locn, entries) {
     var entryString = "";
     var ctr = 0;
 
+    var ratingString = " Ratings: ";
     if (!!entries) {
 
         for (var i = 0; i < entries.length; i++) {
-            ctr += entries[i].rating;
+           ratingString =  ratingString.concat("<br> rating #" + (i+1));
+            var rating = entries[i].rating;
+           ratingString =  ratingString.concat(": " + rating + "/5");
+            ctr += rating;
+
+            console.log("\t" + ratingString);
         }
+
+        ratingString =  ratingString.concat("<br>");
     }
+
 
     if (!!entries) {
 
@@ -128,13 +124,15 @@ function displayOnMap(locn, entries) {
             '</div>' +
             '</div>';
 
-    $("#data").html("Creating..." + locn.address);
+
     var infowindow = new google.maps.InfoWindow({
                 content: contentString
             });
     google.maps.event.addListener(marker, 'click', function() {
         infowindow.open(map, marker);
-        $("#data").html("You clicked on " + locn.address);
+
+        $("#data").empty();
+        $("#data").html("" + ratingString);
     });
 }
 function getLocation(map) {
